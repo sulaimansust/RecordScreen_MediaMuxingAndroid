@@ -224,10 +224,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private Track videoTrack;
-    private long videoTrackDuration;
-    private Track audioTrack;
-    private long audioTrackDuration;
+
 
     private static final String AUDIOID = "AUDIOID";
 
@@ -320,58 +317,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.d(TAG, "Mixer Error 2 " + e.getMessage());
         }
-
-    }
-
-    private void muxAudioAndVideo(String audio, String video, String output) {
-
-        try {
-            Movie movie = new Movie();
-            Log.e(TAG, audio + "\n" + video);
-
-            Movie m = MovieCreator.build(video);
-            for (Track track : m.getTracks()) {
-                Log.e("TAGGY", "Adding video track to new movie");
-                videoTrack = track;
-                videoTrackDuration = track.getDuration() / track.getTrackMetaData().getTimescale();
-                Log.e("TAGGY", "Getting video track to new movie - getDuration " + track.getDuration() / track.getTrackMetaData().getTimescale());
-            }
-
-
-            Movie a = MovieCreator.build(audio);
-            for (Track track : a.getTracks()) {
-                audioTrack = track;
-                audioTrackDuration = track.getDuration() / track.getTrackMetaData().getTimescale();
-                Log.e("TAGGY", "Getting sound track to new audio - getDuration " + track.getDuration() / track.getTrackMetaData().getTimescale());
-            }
-
-            movie.addTrack(videoTrack);
-            movie.addTrack(audioTrack);
-
-           /* if(videoTrackDuration < audioTrackDuration){
-                long indexToCut = 0;
-                long sumOfSampleDurations = 0;
-                long timePerSample = audioTrack.getTrackMetaData().getTimescale();
-                long timeTillNow ;
-                for(long sampleDuration : audioTrack.getSampleDurations()){
-                    sumOfSampleDurations += sampleDuration;
-                    timeTillNow = sumOfSampleDurations/timePerSample;
-                    if(timeTillNow >= videoTrackDuration+1){
-                        break;
-                    }else {
-                        indexToCut++;
-                    }
-                }
-                movie.addTrack(new CroppedTrack(audioTrack, 1,indexToCut-1));
-            }else{
-                movie.addTrack(new CroppedTrack(audioTrack, 1, audioTrack.getSamples().size()-1));
-            }*/
-
-            save(movie, output);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
 
     }
 
