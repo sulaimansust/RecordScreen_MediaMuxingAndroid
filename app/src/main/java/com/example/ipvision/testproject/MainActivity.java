@@ -2,6 +2,7 @@ package com.example.ipvision.testproject;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -49,8 +50,8 @@ import java.nio.channels.FileChannel;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ProgressBar liveRecordingProgressBar;
-    private Button liveRecordingBtn;
+    //    private ProgressBar liveRecordingProgressBar;
+//    private Button liveRecordingBtn;
     private String TAG = "MainActivity";
     private static final int REQUEST_CODE = 1000;
     private int mScreenDensity;
@@ -65,20 +66,21 @@ public class MainActivity extends AppCompatActivity {
     private int progressBarStatus;
     private CountDownTimer mCountDownTimer;
     private boolean isProgressBarFinished;
+    private HoldToLoadLayout holdToLoadLayout;
 
 
     //audiorecord
 
-    RecordScreen recordScreen = new RecordScreen();
+    protected RecordScreen recordScreen = new RecordScreen();
     AudioManager iAudioManager;
 
     public static final int SAMPLE_RATE = 8000;
     private AudioRecord mRecorder;
-    private File rawFile;
-    private File waveFile;
-    private File audioFile;
-    private File videoFile;
-    private File outputFile;
+    protected File rawFile;
+    protected File waveFile;
+    protected File audioFile;
+    protected File videoFile;
+    protected File outputFile;
     private short[] mBuffer;
     private boolean mIsRecording = false;
 
@@ -102,9 +104,51 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         uiInit();
+
+
+
+    }
+
+    private void initiateHoldToLayout() {
+
+        if (holdToLoadLayout != null) {
+            holdToLoadLayout.setStrokeWidth(10);
+            holdToLoadLayout.setStrokeAlpha(255);
+            holdToLoadLayout.setPlayReverseAnimation(false);
+            holdToLoadLayout.setStopWhenFilled(false);
+            holdToLoadLayout.setColorAnimator(Color.YELLOW, Color.RED);
+            holdToLoadLayout.setStartAngle(HoldToLoadLayout.DEFAULT_START_ANGLE);
+            holdToLoadLayout.setDuration(10500);
+            holdToLoadLayout.setMainActivity(MainActivity.this);
+            holdToLoadLayout.setFillListener(new HoldToLoadLayout.FillListener() {
+
+                @Override
+                public void onFull() {
+                    Log.d(TAG, "onFull");
+                    destroyMedia();
+                    addPreviewFragment();
+                }
+
+                @Override
+                public void onEmpty() {
+                    Log.d(TAG, "onEmpty");
+                }
+
+                @Override
+                public void onAngleChanged(float angle) {
+                    Log.d("test_log", "onAngleChange");
+                }
+            });
+
+        }
+
+
     }
 
     private void uiInit() {
+
+        holdToLoadLayout = (HoldToLoadLayout) findViewById(R.id.holdToLoadLayout);
+        initiateHoldToLayout();
 
 
         initAudioRecorder();
@@ -127,104 +171,71 @@ public class MainActivity extends AppCompatActivity {
         //end current display size
 
 
-        ImageView liveRecordingBtn = (ImageView) findViewById(R.id.liveRecordingBtn);
-
-        liveRecordingBtn.setOnTouchListener(new View.OnTouchListener() {
 
 
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
 
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN: {
-
-                        rawFile = recordScreen.getFile("raw");
-                        videoFile = recordScreen.getFile("mp4");
-                        initMediaRecorder(videoFile);
-
-
-                        // configureProgressBar(v);
-                        // progressBarStatus = 0;
-                        // isProgressBarFinished = false;
-
-
-                    }
-                    break;
-                    case MotionEvent.ACTION_UP:
-//                        if (!isProgressBarFinished) {
-
-
-                        destroyMediaProjection();
-
-                        waveFile = recordScreen.getFile("wav");
-                        audioFile = recordScreen.getFile("mp4");
-
-                        try {
-                            recordScreen.rawToWave(rawFile, waveFile);
-
-                        } catch (IOException e) {
-
-                            Toast.makeText(MainActivity.this, e.getMessage(),
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                        Toast.makeText(MainActivity.this,
-                                "Recorded to " + waveFile.getName(),
-                                Toast.LENGTH_SHORT).show();
-
-                        // destroyCountDowntimer();
-
-                        Thread t = new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                recordScreen.wavToMP4(waveFile, audioFile);
-                            }
-                        });
-                        t.start();
-
-                        try {
-
-                            t.join();
-                            if (!t.isAlive()) {
-                                Toast toast = Toast.makeText(MainActivity.this, "Processing Completed", Toast.LENGTH_SHORT);
-                                toast.show();
-
-                                final File outputFile = recordScreen.getFile("mp4");
-
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-
-
-                                        final File outputFile = recordScreen.getFile("mp4");
-                                        //muxAudioAndVideo(videoFile.toString(), audioFile.toString(), outputFile.toString());
-                                        muxing(videoFile.toString(), audioFile.toString(), outputFile.toString());
-
-                                    }
-                                }).start();
-
-                            }
-
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-
-                        // liveRecordingProgressBar.setVisibility(View.INVISIBLE);
-                        //addPreviewFragment();
-
-
-//                        }
-                        break;
-
-                }
-                return true;
-            }
-        });
 
 
     }
 
+    protected void destroyMedia(){
+        Log.d("mymethod","destroyMedia()");
 
+        destroyMediaProjection();
+
+        waveFile = recordScreen.getFile("wav");
+        audioFile = recordScreen.getFile("mp4");
+
+        try {
+            recordScreen.rawToWave(rawFile, waveFile);
+
+        } catch (IOException e) {
+
+            Toast.makeText(MainActivity.this, e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+        }
+        Toast.makeText(MainActivity.this,
+                "Recorded to " + waveFile.getName(),
+                Toast.LENGTH_SHORT).show();
+
+        // destroyCountDowntimer();
+
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                recordScreen.wavToMP4(waveFile, audioFile);
+            }
+        });
+        t.start();
+
+        try {
+
+            t.join();
+            if (!t.isAlive()) {
+                Toast toast = Toast.makeText(MainActivity.this, "Processing Completed", Toast.LENGTH_SHORT);
+                toast.show();
+
+                final File outputFile = recordScreen.getFile("mp4");
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+
+
+                        final File outputFile = recordScreen.getFile("mp4");
+                        //muxAudioAndVideo(videoFile.toString(), audioFile.toString(), outputFile.toString());
+                        muxing(videoFile.toString(), audioFile.toString(), outputFile.toString());
+
+                    }
+                }).start();
+
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private static final String AUDIOID = "AUDIOID";
 
@@ -347,38 +358,38 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void configureProgressBar(View v) {
-
-
-        liveRecordingProgressBar = (ProgressBar) findViewById(R.id.liveRecordingProgressBar);
-        liveRecordingProgressBar.setMax(300);
-        liveRecordingProgressBar.setScaleY(0.3f);
-        liveRecordingProgressBar.setProgress(progressBarStatus);
-        liveRecordingProgressBar.setVisibility(View.VISIBLE);
-
-        mCountDownTimer = new CountDownTimer(30000, 100) {
-
-            @Override
-            public void onTick(long millisUntilFinished) {
-
-                // Log.v("Log_tag", "Tick of Progress " + progressBarStatus + " ---- " + millisUntilFinished);
-                progressBarStatus++;
-                liveRecordingProgressBar.setProgress(progressBarStatus);
-            }
-
-            @Override
-            public void onFinish() {
-                Log.d(TAG, "Finished Progressbar");
-                isProgressBarFinished = true;
-                progressBarStatus++;
-                liveRecordingProgressBar.setProgress(progressBarStatus);
-                destroyMediaProjection();
-                liveRecordingProgressBar.setVisibility(View.GONE);
-                addPreviewFragment();
-            }
-        };
-        mCountDownTimer.start();
-    }
+//    private void configureProgressBar(View v) {
+//
+//
+//        liveRecordingProgressBar = (ProgressBar) findViewById(R.id.liveRecordingProgressBar);
+//        liveRecordingProgressBar.setMax(300);
+//        liveRecordingProgressBar.setScaleY(0.3f);
+//        liveRecordingProgressBar.setProgress(progressBarStatus);
+//        liveRecordingProgressBar.setVisibility(View.VISIBLE);
+//
+//        mCountDownTimer = new CountDownTimer(30000, 100) {
+//
+//            @Override
+//            public void onTick(long millisUntilFinished) {
+//
+//                // Log.v("Log_tag", "Tick of Progress " + progressBarStatus + " ---- " + millisUntilFinished);
+//                progressBarStatus++;
+//                liveRecordingProgressBar.setProgress(progressBarStatus);
+//            }
+//
+//            @Override
+//            public void onFinish() {
+//                Log.d(TAG, "Finished Progressbar");
+//                isProgressBarFinished = true;
+//                progressBarStatus++;
+//                liveRecordingProgressBar.setProgress(progressBarStatus);
+//                destroyMediaProjection();
+//                liveRecordingProgressBar.setVisibility(View.GONE);
+//                addPreviewFragment();
+//            }
+//        };
+//        mCountDownTimer.start();
+//    }
 
     private void addPreviewFragment() {
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new VideoPlaybackFragment()).commit();
@@ -450,7 +461,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void initMediaRecorder(File videoFile) {
+    protected void initMediaRecorder(File videoFile) {
         try {
 
             pipe = ParcelFileDescriptor.createPipe();
@@ -489,7 +500,7 @@ public class MainActivity extends AppCompatActivity {
         destroyMediaProjection();
     }
 
-    private void destroyMediaProjection() {
+    protected void destroyMediaProjection() {
 
         try {
 
